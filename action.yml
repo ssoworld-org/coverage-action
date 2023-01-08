@@ -1,11 +1,24 @@
-name: 'Your name here'
+name: 'Coverlet coverage test'
 description: 'Provide a description here'
 author: 'Your name or organization here'
 inputs:
-  milliseconds: # change this
+  output:  # id of input
+    description: 'output filename'
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    default: './lcov.info'
+  outputFormat:
+    description: 'output format : lcov, json, opencover, cobertura, teamcity (see coverlet documentation)' 
+    required: true
+    default : 'lcov'
+  testProject:
+    description: 'path to unit test project from repository root'    
+    required: true
+  threshold:
+    description: 'threshold below which tests fail.'
+    required: false
+outputs:
+  coverageFile:
+    description: 'path to the generated coverage file'     
 runs:
-  using: 'node16'
+  using: 'node14'
   main: 'dist/index.js'
