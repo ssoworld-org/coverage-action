@@ -1,6 +1,74 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.assertCoverageThreshold = void 0;
+const core = __importStar(__nccwpck_require__(186));
+function ab2str(buf) {
+    return String.fromCharCode.apply(null, buf);
+}
+function ExtractCoverage(lines) {
+    const header = '| Total   |';
+    let i = 0;
+    while (i < lines.length) {
+        const line = lines[i];
+        if (line.startsWith(header)) {
+            return extractCoverageFromLine(line);
+        }
+        i++;
+    }
+    return null;
+}
+function extractCoverageFromLine(line) {
+    const columns = line.split('|').filter(e => e);
+    const linecol = columns[1].trim().replace('%', '').replace(',', '.');
+    const cd = parseFloat(linecol);
+    return cd;
+}
+function assertCoverageThreshold(buffer, thresholdstring) {
+    const dotnetOutput = ab2str(buffer);
+    console.log(`Checking threshold ${thresholdstring}`);
+    console.log(dotnetOutput);
+    const coverage = ExtractCoverage(dotnetOutput.split('\n'));
+    if (coverage !== null && coverage !== undefined) {
+        if (coverage < parseFloat(thresholdstring)) {
+            core.setFailed(`coverage level too low : ${coverage} % , expecting ${thresholdstring} %`);
+        }
+    }
+}
+exports.assertCoverageThreshold = assertCoverageThreshold;
+
+
+/***/ }),
+
 /***/ 109:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -38,18 +106,58 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(186));
-const wait_1 = __nccwpck_require__(817);
+const child_process_1 = __nccwpck_require__(81);
+const path_1 = __importDefault(__nccwpck_require__(17));
+const fs_1 = __importDefault(__nccwpck_require__(147));
+const coverage_1 = __nccwpck_require__(730);
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const ms = core.getInput('milliseconds');
-            core.debug(`Waiting ${ms} milliseconds ...`); // debug is only output if you set the secret `ACTIONS_STEP_DEBUG` to true
-            core.debug(new Date().toTimeString());
-            yield (0, wait_1.wait)(parseInt(ms, 10));
-            core.debug(new Date().toTimeString());
-            core.setOutput('time', new Date().toTimeString());
+            const output = core.getInput('output');
+            const outputFormat = core.getInput('outputFormat');
+            const settingsFile = core.getInput('settingsFile');
+            const thresholdstring = core.getInput('threshold');
+            const rootpath = path_1.default.dirname('./');
+            const coverageFile = `${rootpath}/${output}`;
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const runSettingsFile = `${rootpath}/${settingsFile}`;
+            if (!fs_1.default.existsSync(coverageFile)) {
+                core.setFailed(`error occurred : runsettings file not found at ${settingsFile}`);
+            }
+            /****************************************/
+            /****                                ****/
+            /****  create coverlet args          ****/
+            /****                                ****/
+            /****************************************/
+            const properties = `--collect:"XPlat Code Coverage" --settings coverlet.runsettings /p:CollectCoverage=true /p:CoverletOutputFormat=${outputFormat}`;
+            // let properties: string = `-p:coverletOutput=${output} -p:CollectCoverage=true -p:CoverletOutputFormat=${outputFormat}`;
+            const execString = `run dotnet test -c Debug ${properties}`;
+            console.log(execString);
+            /* ***************************************/
+            /* ***                                ****/
+            /* ***  run dotnet test               ****/
+            /* ***                                ****/
+            /* ***************************************/
+            try {
+                const dotnet = (0, child_process_1.execSync)(execString);
+                console.log(`dotnet succeeded`);
+                (0, coverage_1.assertCoverageThreshold)(dotnet, thresholdstring);
+            }
+            catch (error) {
+                console.log(`dotnet failed`);
+                if (error instanceof Error) {
+                    (0, coverage_1.assertCoverageThreshold)(error.message, thresholdstring);
+                    core.setFailed(`dotnet test failure ${error.message}`);
+                }
+            }
+            if (!fs_1.default.existsSync(coverageFile)) {
+                core.setFailed(`error occurred : coverage file not found at ${coverageFile}`);
+            }
         }
         catch (error) {
             if (error instanceof Error)
@@ -58,37 +166,6 @@ function run() {
     });
 }
 run();
-
-
-/***/ }),
-
-/***/ 817:
-/***/ (function(__unused_webpack_module, exports) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = void 0;
-function wait(milliseconds) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return new Promise(resolve => {
-            if (isNaN(milliseconds)) {
-                throw new Error('milliseconds not a number');
-            }
-            setTimeout(() => resolve('done!'), milliseconds);
-        });
-    });
-}
-exports.wait = wait;
 
 
 /***/ }),
@@ -2785,6 +2862,14 @@ exports["default"] = _default;
 
 "use strict";
 module.exports = require("assert");
+
+/***/ }),
+
+/***/ 81:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("child_process");
 
 /***/ }),
 

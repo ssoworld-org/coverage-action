@@ -1,24 +1,23 @@
-import * as core from '@actions/core'
-import {execSync} from 'child_process'
-import path from 'path'
-import fs from 'fs'
-import {assertCoverageThreshold} from './coverage'
+import * as core from '@actions/core';
+import {execSync} from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import {assertCoverageThreshold} from './coverage';
 
 async function run(): Promise<void> {
   try {
-    const output: string = core.getInput('output')
-    const outputFormat: string = core.getInput('outputFormat')
-    let settingsFile: string = core.getInput('settingsFile')
-    let thresholdstring: string = core.getInput('threshold')
+    const output: string = core.getInput('output');
+    const outputFormat: string = core.getInput('outputFormat');
+    const settingsFile: string = core.getInput('settingsFile');
+    const thresholdstring: string = core.getInput('threshold');
 
-    const rootpath = path.dirname('./')
-    const coverageFile = `${rootpath}/${output}`
-    const runSettingsFile = `${rootpath}/${settingsFile}`
+    const rootpath = path.dirname('./');
+    const coverageFile = `${rootpath}/${output}`;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const runSettingsFile = `${rootpath}/${settingsFile}`;
 
     if (!fs.existsSync(coverageFile)) {
-      core.setFailed(
-        `error occurred : runsettings file not found at ${settingsFile}`
-      )
+      core.setFailed(`error occurred : runsettings file not found at ${settingsFile}`);
     }
 
     /****************************************/
@@ -27,11 +26,11 @@ async function run(): Promise<void> {
     /****                                ****/
     /****************************************/
 
-    const properties: string = `--collect:"XPlat Code Coverage" --settings coverlet.runsettings /p:CollectCoverage=true /p:CoverletOutputFormat=${outputFormat}`
+    const properties = `--collect:"XPlat Code Coverage" --settings coverlet.runsettings /p:CollectCoverage=true /p:CoverletOutputFormat=${outputFormat}`;
     // let properties: string = `-p:coverletOutput=${output} -p:CollectCoverage=true -p:CoverletOutputFormat=${outputFormat}`;
 
-    const execString: string = `run dotnet test -c Debug ${properties}`
-    console.log(execString)
+    const execString = `run dotnet test -c Debug ${properties}`;
+    console.log(execString);
 
     /* ***************************************/
     /* ***                                ****/
@@ -40,25 +39,23 @@ async function run(): Promise<void> {
     /* ***************************************/
 
     try {
-      const dotnet: any = execSync(execString)
-      console.log(`dotnet succeeded`)
-      assertCoverageThreshold(dotnet, thresholdstring)
+      const dotnet: any = execSync(execString);
+      console.log(`dotnet succeeded`);
+      assertCoverageThreshold(dotnet, thresholdstring);
     } catch (error) {
-      console.log(`dotnet failed`)
+      console.log(`dotnet failed`);
       if (error instanceof Error) {
-        assertCoverageThreshold(error.message, thresholdstring)
-        core.setFailed(`dotnet test failure ${error.message}`)
+        assertCoverageThreshold(error.message, thresholdstring);
+        core.setFailed(`dotnet test failure ${error.message}`);
       }
     }
 
     if (!fs.existsSync(coverageFile)) {
-      core.setFailed(
-        `error occurred : coverage file not found at ${coverageFile}`
-      )
+      core.setFailed(`error occurred : coverage file not found at ${coverageFile}`);
     }
   } catch (error) {
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) core.setFailed(error.message);
   }
 }
 
-run()
+run();
